@@ -1,0 +1,552 @@
+GAMS 52.2.0  d8e408be Dec 8, 2025           WEX-WEI x86 64bit/MS Windows - 01/05/26 20:26:52 Page 1
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+C o m p i l a t i o n
+
+
+   1  Sets
+   2      i  firms /f1*f10/;
+   3   
+   4  Alias (i,j);
+   5   
+   6  Parameter
+   7      d(i,j)   distance
+   8      w(i)     waste
+   9      p        /2/;
+  10   
+  11  w('f1')  = 111;
+  12  w('f2')  = 51;
+  13  w('f3')  = 120;
+  14  w('f4')  = 96;
+  15  w('f5')  = 26;
+  16  w('f6')  = 117;
+  17  w('f7')  = 43;
+  18  w('f8')  = 135;
+  19  w('f9')  = 57;
+  20  w('f10') = 67;
+  21   
+  22  Table d(i,j)
+  23          f1     f2     f3     f4     f5     f6     f7     f8     f9     f10
+  24  f1      0.000  8.994  0.811  1.889  1.491  1.684  1.362  0.594  0.641  0.245
+  25  f2      8.994  0.000  9.079 10.752 10.481 10.516 10.245  9.444  9.018  9.163
+  26  f3      0.811  9.079  0.000  2.299  1.708  2.147  1.822  0.570  0.175  0.996
+  27  f4      1.889 10.752  2.299  0.000  0.689  0.239  0.529  1.730  2.224  1.667
+  28  f5      1.491 10.481  1.708  0.689  0.000  0.666  0.525  1.162  1.666  1.321
+  29  f6      1.684 10.516  2.147  0.239  0.666  0.000  0.330  1.577  2.060  1.456
+  30  f7      1.362 10.245  1.822  0.529  0.525  0.330  0.000  1.253  1.732  1.138
+  31  f8      0.594  9.444  0.570  1.730  1.162  1.577  1.253  0.000  0.505  0.638
+  32  f9      0.641  9.018  0.175  2.224  1.666  2.060  1.732  0.505  0.000  0.837
+  33  f10     0.245  9.163  0.996  1.667  1.321  1.456  1.138  0.638  0.837  0.000
+  34  ;
+  35   
+  36  Binary Variable
+  37      y(j)     "1 if facility opened at j"
+  38      x(i,j)   "1 if i assigned to j";
+  39   
+  40  Variable z;
+  41   
+  42   
+  43  Equations
+  44      obj
+  45      assignOnce(i)
+  46      openLimit
+  47      link(i,j);
+  48   
+  49  obj..
+  50      z =e= sum((i,j), w(i) * d(i,j) * x(i,j));
+  51   
+  52  assignOnce(i)..
+  53      sum(j, x(i,j)) =e= 1;
+  54   
+  55  openLimit..
+  56      sum(j, y(j)) =e= p;
+  57   
+  58  link(i,j)..
+  59      x(i,j) =l= y(j);
+  60   
+  61  Model pMedian /all/;
+  62  Solve pMedian using MIP minimizing z;
+  63   
+  64  Display z.l, y.l, x.l;
+  65   
+
+
+COMPILATION TIME     =        0.000 SECONDS      3 MB  52.2.0 d8e408be WEX-WEI
+GAMS 52.2.0  d8e408be Dec 8, 2025           WEX-WEI x86 64bit/MS Windows - 01/05/26 20:26:52 Page 2
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE pMedian Using MIP From line 62
+
+
+---- obj  =E=  
+
+obj..  - 998.334*x(f1,f2) - 90.021*x(f1,f3) - 209.679*x(f1,f4) - 165.501*x(f1,f5) - 186.924*x(f1,f6) - 151.182*x(f1,f7) - 65.934*x(f1,f8) - 71.151*x(f1,f9) - 27.195*x(f1,f10) - 458.694*x(f2,f1) - 463.029*x(f2,f3) - 548.352*x(f2,f4) - 534.531*x(f2,f5) - 536.316*x(f2,f6) - 522.495*x(f2,f7) - 481.644*x(f2,f8) - 459.918*x(f2,f9) - 467.313*x(f2,f10) - 97.32*x(f3,f1) - 1089.48*x(f3,f2) - 275.88*x(f3,f4) - 204.96*x(f3,f5) - 257.64*x(f3,f6) - 218.64*x(f3,f7) - 68.4*x(f3,f8) - 21*x(f3,f9) - 119.52*x(f3,f10) - 181.344*x(f4,f1) - 1032.192*x(f4,f2) - 220.704*x(f4,f3) - 66.144*x(f4,f5) - 22.944*x(f4,f6) - 50.784*x(f4,f7) - 166.08*x(f4,f8) - 213.504*x(f4,f9) - 160.032*x(f4,f10) - 38.766*x(f5,f1) - 272.506*x(f5,f2) - 44.408*x(f5,f3) - 17.914*x(f5,f4) - 17.316*x(f5,f6) - 13.65*x(f5,f7) - 30.212*x(f5,f8) - 43.316*x(f5,f9) - 34.346*x(f5,f10) - 197.028*x(f6,f1) - 1230.372*x(f6,f2) - 251.199*x(f6,f3) - 27.963*x(f6,f4) - 77.922*x(f6,f5) - 38.61*x(f6,f7) - 184.509*x(f6,f8) - 241.02*x(f6,f9) - 170.352*x(f6,f10) - 58.566*x(f7,f1) - 440.535*x(f7,f2) - 78.346*x(f7,f3) - 22.747*x(f7,f4) - 22.575*x(f7,f5) - 14.19*x(f7,f6) - 53.879*x(f7,f8) - 74.476*x(f7,f9) - 48.934*x(f7,f10) - 80.19*x(f8,f1) - 1274.94*x(f8,f2) - 76.95*x(f8,f3) - 233.55*x(f8,f4) - 156.87*x(f8,f5) - 212.895*x(f8,f6) - 169.155*x(f8,f7) - 68.175*x(f8,f9) - 86.13*x(f8,f10) - 36.537*x(f9,f1) - 514.026*x(f9,f2) - 9.975*x(f9,f3) - 126.768*x(f9,f4) - 94.962*x(f9,f5) - 117.42*x(f9,f6) - 98.724*x(f9,f7) - 28.785*x(f9,f8) - 47.709*x(f9,f10) - 16.415*x(f10,f1) - 613.921*x(f10,f2) - 66.732*x(f10,f3) - 111.689*x(f10,f4) - 88.507*x(f10,f5) - 97.552*x(f10,f6) - 76.246*x(f10,f7) - 42.746*x(f10,f8) - 56.079*x(f10,f9) + z =E= 0 ; (LHS = 0)
+     
+
+---- assignOnce  =E=  
+
+assignOnce(f1)..  x(f1,f1) + x(f1,f2) + x(f1,f3) + x(f1,f4) + x(f1,f5) + x(f1,f6) + x(f1,f7) + x(f1,f8) + x(f1,f9) + x(f1,f10) =E= 1 ; (LHS = 0, INFES = 1 ****)
+     
+assignOnce(f2)..  x(f2,f1) + x(f2,f2) + x(f2,f3) + x(f2,f4) + x(f2,f5) + x(f2,f6) + x(f2,f7) + x(f2,f8) + x(f2,f9) + x(f2,f10) =E= 1 ; (LHS = 0, INFES = 1 ****)
+     
+assignOnce(f3)..  x(f3,f1) + x(f3,f2) + x(f3,f3) + x(f3,f4) + x(f3,f5) + x(f3,f6) + x(f3,f7) + x(f3,f8) + x(f3,f9) + x(f3,f10) =E= 1 ; (LHS = 0, INFES = 1 ****)
+     
+REMAINING 7 ENTRIES SKIPPED
+
+
+---- openLimit  =E=  
+
+openLimit..  y(f1) + y(f2) + y(f3) + y(f4) + y(f5) + y(f6) + y(f7) + y(f8) + y(f9) + y(f10) =E= 2 ; (LHS = 0, INFES = 2 ****)
+     
+
+---- link  =L=  
+
+link(f1,f1)..  - y(f1) + x(f1,f1) =L= 0 ; (LHS = 0)
+     
+link(f1,f2)..  - y(f2) + x(f1,f2) =L= 0 ; (LHS = 0)
+     
+link(f1,f3)..  - y(f3) + x(f1,f3) =L= 0 ; (LHS = 0)
+     
+REMAINING 97 ENTRIES SKIPPED
+
+GAMS 52.2.0  d8e408be Dec 8, 2025           WEX-WEI x86 64bit/MS Windows - 01/05/26 20:26:52 Page 3
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE pMedian Using MIP From line 62
+
+
+---- y  1 if facility opened at j
+
+y(f1)
+                (.LO, .L, .UP, .M = 0, 0, 1, 0)
+        1       openLimit
+       -1       link(f1,f1)
+       -1       link(f2,f1)
+       -1       link(f3,f1)
+       -1       link(f4,f1)
+       -1       link(f5,f1)
+       -1       link(f6,f1)
+       -1       link(f7,f1)
+       -1       link(f8,f1)
+       -1       link(f9,f1)
+       -1       link(f10,f1)
+
+y(f2)
+                (.LO, .L, .UP, .M = 0, 0, 1, 0)
+        1       openLimit
+       -1       link(f1,f2)
+       -1       link(f2,f2)
+       -1       link(f3,f2)
+       -1       link(f4,f2)
+       -1       link(f5,f2)
+       -1       link(f6,f2)
+       -1       link(f7,f2)
+       -1       link(f8,f2)
+       -1       link(f9,f2)
+       -1       link(f10,f2)
+
+y(f3)
+                (.LO, .L, .UP, .M = 0, 0, 1, 0)
+        1       openLimit
+       -1       link(f1,f3)
+       -1       link(f2,f3)
+       -1       link(f3,f3)
+       -1       link(f4,f3)
+       -1       link(f5,f3)
+       -1       link(f6,f3)
+       -1       link(f7,f3)
+       -1       link(f8,f3)
+       -1       link(f9,f3)
+       -1       link(f10,f3)
+
+REMAINING 7 ENTRIES SKIPPED
+
+---- x  1 if i assigned to j
+
+x(f1,f1)
+                (.LO, .L, .UP, .M = 0, 0, 1, 0)
+        1       assignOnce(f1)
+        1       link(f1,f1)
+
+x(f1,f2)
+                (.LO, .L, .UP, .M = 0, 0, 1, 0)
+     -998.334   obj
+        1       assignOnce(f1)
+        1       link(f1,f2)
+
+x(f1,f3)
+                (.LO, .L, .UP, .M = 0, 0, 1, 0)
+      -90.021   obj
+        1       assignOnce(f1)
+        1       link(f1,f3)
+
+REMAINING 97 ENTRIES SKIPPED
+
+---- z  
+
+z
+                (.LO, .L, .UP, .M = -INF, 0, +INF, 0)
+        1       obj
+
+GAMS 52.2.0  d8e408be Dec 8, 2025           WEX-WEI x86 64bit/MS Windows - 01/05/26 20:26:52 Page 4
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE pMedian Using MIP From line 62
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [ 1.000E+00, 2.000E+00] - Zero values observed as well
+Bound     [min, max] : [ 1.000E+00, 1.000E+00] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 1.275E+03]
+
+GAMS 52.2.0  d8e408be Dec 8, 2025           WEX-WEI x86 64bit/MS Windows - 01/05/26 20:26:52 Page 5
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE pMedian Using MIP From line 62
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           4     SINGLE EQUATIONS          112
+BLOCKS OF VARIABLES           3     SINGLE VARIABLES          111
+NON ZERO ELEMENTS           401     DISCRETE VARIABLES        110
+
+
+GENERATION TIME      =        0.187 SECONDS      4 MB  52.2.0 d8e408be WEX-WEI
+GAMS 52.2.0  d8e408be Dec 8, 2025           WEX-WEI x86 64bit/MS Windows - 01/05/26 20:26:52 Page 6
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE pMedian Using MIP From line 62
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   pMedian             OBJECTIVE  z
+     TYPE    MIP                 DIRECTION  MINIMIZE
+     SOLVER  CPLEX               FROM LINE  62
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      1 Optimal
+**** OBJECTIVE VALUE              640.5450
+
+ RESOURCE USAGE, LIMIT          0.031 10000000000.000
+ ITERATION COUNT, LIMIT        49    2147483647
+*** This solver runs with a demo license. No commercial use.
+--- GMO setup time: 0.00s
+--- GMO memory 0.53 Mb (peak 0.53 Mb)
+--- Dictionary memory 0.00 Mb
+--- Cplex 22.1.2.0 link memory 0.00 Mb (peak 0.01 Mb)
+--- Starting Cplex
+
+
+--- MIP status (101): integer optimal solution.
+--- Cplex Time: 0.03sec (det. 1.49 ticks)
+
+--- Returning a primal only solution to GAMS (marginals all set to NA).
+--- Fixing integer variables and solving final LP...
+
+
+--- Fixed MIP status (1): optimal.
+--- Cplex Time: 0.00sec (det. 0.08 ticks)
+
+
+Proven optimal solution
+MIP Solution:          640.545000    (49 iterations, 0 nodes)
+Final Solve:           640.545000    (0 iterations)
+
+Best possible:         640.545000
+Absolute gap:            0.000000
+Relative gap:            0.000000
+
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU obj                 .              .              .             1.0000      
+
+---- EQU assignOnce  
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+f1          1.0000         1.0000         1.0000          .          
+f2          1.0000         1.0000         1.0000          .          
+f3          1.0000         1.0000         1.0000          .          
+f4          1.0000         1.0000         1.0000          .          
+f5          1.0000         1.0000         1.0000          .          
+f6          1.0000         1.0000         1.0000          .          
+f7          1.0000         1.0000         1.0000          .          
+f8          1.0000         1.0000         1.0000          .          
+f9          1.0000         1.0000         1.0000          .          
+f10         1.0000         1.0000         1.0000          .          
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU openLimit          2.0000         2.0000         2.0000          .          
+
+---- EQU link  
+
+               LOWER          LEVEL          UPPER         MARGINAL
+
+f1 .f1         -INF             .              .              .          
+f1 .f2         -INF           -1.0000          .              .          
+f1 .f3         -INF             .              .              .          
+f1 .f4         -INF             .              .              .          
+f1 .f5         -INF             .              .              .          
+f1 .f6         -INF             .              .              .          
+f1 .f7         -INF             .              .              .          
+f1 .f8         -INF             .              .              .          
+f1 .f9         -INF             .              .              .          
+f1 .f10        -INF             .              .              .          
+f2 .f1         -INF             .              .              .          
+f2 .f2         -INF             .              .              .          
+f2 .f3         -INF             .              .              .          
+f2 .f4         -INF             .              .              .          
+f2 .f5         -INF             .              .              .          
+f2 .f6         -INF             .              .              .          
+f2 .f7         -INF             .              .              .          
+f2 .f8         -INF           -1.0000          .              .          
+f2 .f9         -INF             .              .              .          
+f2 .f10        -INF             .              .              .          
+f3 .f1         -INF             .              .              .          
+f3 .f2         -INF           -1.0000          .              .          
+f3 .f3         -INF             .              .              .          
+f3 .f4         -INF             .              .              .          
+f3 .f5         -INF             .              .              .          
+f3 .f6         -INF             .              .              .          
+f3 .f7         -INF             .              .              .          
+f3 .f8         -INF             .              .              .          
+f3 .f9         -INF             .              .              .          
+f3 .f10        -INF             .              .              .          
+f4 .f1         -INF             .              .              .          
+f4 .f2         -INF           -1.0000          .              .          
+f4 .f3         -INF             .              .              .          
+f4 .f4         -INF             .              .              .          
+f4 .f5         -INF             .              .              .          
+f4 .f6         -INF             .              .              .          
+f4 .f7         -INF             .              .              .          
+f4 .f8         -INF             .              .              .          
+f4 .f9         -INF             .              .              .          
+f4 .f10        -INF             .              .              .          
+f5 .f1         -INF             .              .              .          
+f5 .f2         -INF           -1.0000          .              .          
+f5 .f3         -INF             .              .              .          
+f5 .f4         -INF             .              .              .          
+f5 .f5         -INF             .              .              .          
+f5 .f6         -INF             .              .              .          
+f5 .f7         -INF             .              .              .          
+f5 .f8         -INF             .              .              .          
+f5 .f9         -INF             .              .              .          
+f5 .f10        -INF             .              .              .          
+f6 .f1         -INF             .              .              .          
+f6 .f2         -INF           -1.0000          .              .          
+f6 .f3         -INF             .              .              .          
+f6 .f4         -INF             .              .              .          
+f6 .f5         -INF             .              .              .          
+f6 .f6         -INF             .              .              .          
+f6 .f7         -INF             .              .              .          
+f6 .f8         -INF             .              .              .          
+f6 .f9         -INF             .              .              .          
+f6 .f10        -INF             .              .              .          
+f7 .f1         -INF             .              .              .          
+f7 .f2         -INF           -1.0000          .              .          
+f7 .f3         -INF             .              .              .          
+f7 .f4         -INF             .              .              .          
+f7 .f5         -INF             .              .              .          
+f7 .f6         -INF             .              .              .          
+f7 .f7         -INF             .              .              .          
+f7 .f8         -INF             .              .              .          
+f7 .f9         -INF             .              .              .          
+f7 .f10        -INF             .              .              .          
+f8 .f1         -INF             .              .              .          
+f8 .f2         -INF           -1.0000          .              .          
+f8 .f3         -INF             .              .              .          
+f8 .f4         -INF             .              .              .          
+f8 .f5         -INF             .              .              .          
+f8 .f6         -INF             .              .              .          
+f8 .f7         -INF             .              .              .          
+f8 .f8         -INF             .              .              .          
+f8 .f9         -INF             .              .              .          
+f8 .f10        -INF             .              .              .          
+f9 .f1         -INF             .              .              .          
+f9 .f2         -INF           -1.0000          .              .          
+f9 .f3         -INF             .              .              .          
+f9 .f4         -INF             .              .              .          
+f9 .f5         -INF             .              .              .          
+f9 .f6         -INF             .              .              .          
+f9 .f7         -INF             .              .              .          
+f9 .f8         -INF             .              .              .          
+f9 .f9         -INF             .              .              .          
+f9 .f10        -INF             .              .              .          
+f10.f1         -INF             .              .              .          
+f10.f2         -INF           -1.0000          .              .          
+f10.f3         -INF             .              .              .          
+f10.f4         -INF             .              .              .          
+f10.f5         -INF             .              .              .          
+f10.f6         -INF             .              .              .          
+f10.f7         -INF             .              .              .          
+f10.f8         -INF             .              .              .          
+f10.f9         -INF             .              .              .          
+f10.f10        -INF             .              .              .          
+
+---- VAR y  1 if facility opened at j
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+f1           .              .             1.0000         EPS         
+f2           .             1.0000         1.0000         EPS         
+f3           .              .             1.0000         EPS         
+f4           .              .             1.0000         EPS         
+f5           .              .             1.0000         EPS         
+f6           .              .             1.0000         EPS         
+f7           .              .             1.0000         EPS         
+f8           .             1.0000         1.0000         EPS         
+f9           .              .             1.0000         EPS         
+f10          .              .             1.0000         EPS         
+
+---- VAR x  1 if i assigned to j
+
+               LOWER          LEVEL          UPPER         MARGINAL
+
+f1 .f1           .              .             1.0000         EPS         
+f1 .f2           .              .             1.0000       998.3340      
+f1 .f3           .              .             1.0000        90.0210      
+f1 .f4           .              .             1.0000       209.6790      
+f1 .f5           .              .             1.0000       165.5010      
+f1 .f6           .              .             1.0000       186.9240      
+f1 .f7           .              .             1.0000       151.1820      
+f1 .f8           .             1.0000         1.0000        65.9340      
+f1 .f9           .              .             1.0000        71.1510      
+f1 .f10          .              .             1.0000        27.1950      
+f2 .f1           .              .             1.0000       458.6940      
+f2 .f2           .             1.0000         1.0000         EPS         
+f2 .f3           .              .             1.0000       463.0290      
+f2 .f4           .              .             1.0000       548.3520      
+f2 .f5           .              .             1.0000       534.5310      
+f2 .f6           .              .             1.0000       536.3160      
+f2 .f7           .              .             1.0000       522.4950      
+f2 .f8           .              .             1.0000       481.6440      
+f2 .f9           .              .             1.0000       459.9180      
+f2 .f10          .              .             1.0000       467.3130      
+f3 .f1           .              .             1.0000        97.3200      
+f3 .f2           .              .             1.0000      1089.4800      
+f3 .f3           .              .             1.0000         EPS         
+f3 .f4           .              .             1.0000       275.8800      
+f3 .f5           .              .             1.0000       204.9600      
+f3 .f6           .              .             1.0000       257.6400      
+f3 .f7           .              .             1.0000       218.6400      
+f3 .f8           .             1.0000         1.0000        68.4000      
+f3 .f9           .              .             1.0000        21.0000      
+f3 .f10          .              .             1.0000       119.5200      
+f4 .f1           .              .             1.0000       181.3440      
+f4 .f2           .              .             1.0000      1032.1920      
+f4 .f3           .              .             1.0000       220.7040      
+f4 .f4           .              .             1.0000         EPS         
+f4 .f5           .              .             1.0000        66.1440      
+f4 .f6           .              .             1.0000        22.9440      
+f4 .f7           .              .             1.0000        50.7840      
+f4 .f8           .             1.0000         1.0000       166.0800      
+f4 .f9           .              .             1.0000       213.5040      
+f4 .f10          .              .             1.0000       160.0320      
+f5 .f1           .              .             1.0000        38.7660      
+f5 .f2           .              .             1.0000       272.5060      
+f5 .f3           .              .             1.0000        44.4080      
+f5 .f4           .              .             1.0000        17.9140      
+f5 .f5           .              .             1.0000         EPS         
+f5 .f6           .              .             1.0000        17.3160      
+f5 .f7           .              .             1.0000        13.6500      
+f5 .f8           .             1.0000         1.0000        30.2120      
+f5 .f9           .              .             1.0000        43.3160      
+f5 .f10          .              .             1.0000        34.3460      
+f6 .f1           .              .             1.0000       197.0280      
+f6 .f2           .              .             1.0000      1230.3720      
+f6 .f3           .              .             1.0000       251.1990      
+f6 .f4           .              .             1.0000        27.9630      
+f6 .f5           .              .             1.0000        77.9220      
+f6 .f6           .              .             1.0000         EPS         
+f6 .f7           .              .             1.0000        38.6100      
+f6 .f8           .             1.0000         1.0000       184.5090      
+f6 .f9           .              .             1.0000       241.0200      
+f6 .f10          .              .             1.0000       170.3520      
+f7 .f1           .              .             1.0000        58.5660      
+f7 .f2           .              .             1.0000       440.5350      
+f7 .f3           .              .             1.0000        78.3460      
+f7 .f4           .              .             1.0000        22.7470      
+f7 .f5           .              .             1.0000        22.5750      
+f7 .f6           .              .             1.0000        14.1900      
+f7 .f7           .              .             1.0000         EPS         
+f7 .f8           .             1.0000         1.0000        53.8790      
+f7 .f9           .              .             1.0000        74.4760      
+f7 .f10          .              .             1.0000        48.9340      
+f8 .f1           .              .             1.0000        80.1900      
+f8 .f2           .              .             1.0000      1274.9400      
+f8 .f3           .              .             1.0000        76.9500      
+f8 .f4           .              .             1.0000       233.5500      
+f8 .f5           .              .             1.0000       156.8700      
+f8 .f6           .              .             1.0000       212.8950      
+f8 .f7           .              .             1.0000       169.1550      
+f8 .f8           .             1.0000         1.0000         EPS         
+f8 .f9           .              .             1.0000        68.1750      
+f8 .f10          .              .             1.0000        86.1300      
+f9 .f1           .              .             1.0000        36.5370      
+f9 .f2           .              .             1.0000       514.0260      
+f9 .f3           .              .             1.0000         9.9750      
+f9 .f4           .              .             1.0000       126.7680      
+f9 .f5           .              .             1.0000        94.9620      
+f9 .f6           .              .             1.0000       117.4200      
+f9 .f7           .              .             1.0000        98.7240      
+f9 .f8           .             1.0000         1.0000        28.7850      
+f9 .f9           .              .             1.0000         EPS         
+f9 .f10          .              .             1.0000        47.7090      
+f10.f1           .              .             1.0000        16.4150      
+f10.f2           .              .             1.0000       613.9210      
+f10.f3           .              .             1.0000        66.7320      
+f10.f4           .              .             1.0000       111.6890      
+f10.f5           .              .             1.0000        88.5070      
+f10.f6           .              .             1.0000        97.5520      
+f10.f7           .              .             1.0000        76.2460      
+f10.f8           .             1.0000         1.0000        42.7460      
+f10.f9           .              .             1.0000        56.0790      
+f10.f10          .              .             1.0000         EPS         
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR z                 -INF          640.5450        +INF             .          
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+GAMS 52.2.0  d8e408be Dec 8, 2025           WEX-WEI x86 64bit/MS Windows - 01/05/26 20:26:52 Page 7
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----     64 VARIABLE z.L                   =      640.545  
+
+----     64 VARIABLE y.L  1 if facility opened at j
+
+f2 1.000,    f8 1.000
+
+
+----     64 VARIABLE x.L  1 if i assigned to j
+
+             f2          f8
+
+f1                    1.000
+f2        1.000
+f3                    1.000
+f4                    1.000
+f5                    1.000
+f6                    1.000
+f7                    1.000
+f8                    1.000
+f9                    1.000
+f10                   1.000
+
+
+
+EXECUTION TIME       =        2.641 SECONDS      4 MB  52.2.0 d8e408be WEX-WEI
+
+
+USER: GAMS Demo, for EULA and demo limitations see   G251112+0003Cc-GEN
+      https://www.gams.com/latest/docs/UG%5FLicense.html         DC0000
+
+
+**** FILE SUMMARY
+
+Input      C:\Users\Lenovo\Desktop\aaaaa\p-median.gms
+Output     C:\Users\Lenovo\Desktop\GAMSSSS\p-median.lst

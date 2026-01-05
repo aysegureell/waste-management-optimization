@@ -1,0 +1,3 @@
+2. KADEME (TM -> AM) SECILEN ROTA
+TM: tm1 -> AM: f8   Mesafe(km):    9.444
+TM: tm2 -> AM: f8   Mesafe(km):    0.000

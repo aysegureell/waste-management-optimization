@@ -1,0 +1,15 @@
+1. KADEME TOPLAMA ROTLARI
+
+TM: tm1
+f1 -> f2
+f2 -> f3
+f3 -> f1
+
+TM: tm2
+f4 -> f5
+f5 -> f8
+f6 -> f4
+f7 -> f6
+f8 -> f9
+f9 -> f10
+f10 -> f7

@@ -1,0 +1,763 @@
+GAMS 52.2.0  d8e408be Dec 8, 2025           WEX-WEI x86 64bit/MS Windows - 01/05/26 20:32:04 Page 1
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+C o m p i l a t i o n
+
+
+   1  Sets
+   2      n  /f1*f10/
+   3      t  /tm1, tm2/;
+   4   
+   5  Alias (n,i,j,nn);
+   6   
+   7  Set tmNode(t,n);
+   8  tmNode('tm1','f2') = yes;
+   9  tmNode('tm2','f8') = yes;
+  10   
+  11  Set cust(t,n);
+  12   
+  13  cust('tm1','f2') = yes;
+  14  cust('tm1','f1') = yes;
+  15  cust('tm1','f3') = yes;
+  16   
+  17  cust('tm2','f8')  = yes;
+  18  cust('tm2','f4')  = yes;
+  19  cust('tm2','f5')  = yes;
+  20  cust('tm2','f6')  = yes;
+  21  cust('tm2','f7')  = yes;
+  22  cust('tm2','f9')  = yes;
+  23  cust('tm2','f10') = yes;
+  24   
+  25  Parameter w(n) /
+  26      f1 111, f2 51, f3 120, f4 96, f5 26, f6 117, f7 43, f8 135, f9 57, f10 67 /;
+  27   
+  28  Table dist(i,j)
+  29            f1     f2     f3     f4     f5     f6     f7     f8     f9     f10
+  30  f1        0.000  0.994  0.811  1.889  1.491  1.684  1.362  0.594  0.641  0.245
+  31  f2        0.994  0.000  0.079  10.752 10.481 10.516 10.245 9.444  9.018  9.163
+  32  f3        0.811  0.079  0.000  2.299  1.708  2.147  1.822  0.570  0.175  0.996
+  33  f4        1.889 10.752  2.299  0.000  0.689  0.239  0.529  1.730  2.224  1.667
+  34  f5        1.491 10.481  1.708  0.689  0.000  0.666  0.525  1.162  2.060  1.321
+  35  f6        1.684 10.516  2.147  0.239  0.666  0.000  0.330  1.577  2.060  1.456
+  36  f7        1.362 10.245  1.822  0.529  0.525  0.330  0.000  1.253  1.732  1.138
+  37  f8        0.594  9.444  0.570  1.730  1.162  1.577  1.253  0.000  0.505  0.638
+  38  f9        0.641  9.018  0.175  2.224  2.060  2.060  1.732  0.505  0.000  0.837
+  39  f10       0.245  9.163  0.996  1.667  1.321  1.456  1.138  0.638  0.837  0.000
+  40  ;
+  41   
+  42  Scalar Q /999999/;
+  43   
+  44  Binary Variable arc(i,j,t);
+  45  Variable z1;
+  46  Positive Variable u(n,t);
+  47   
+  48  Equations
+  49      obj1
+  50      depOut(t)
+  51      depIn(t)
+  52      visitOnce(t,nn)
+  53      flowBal(t,nn)
+  54      noSelf(i,t)
+  55      cap(t)
+  56      mtz(i,j,t);
+  57   
+  58  obj1..
+  59      z1 =e= sum((i,j,t)$(ord(i)<>ord(j)), dist(i,j)*arc(i,j,t));
+  60   
+  61  depOut(t)..
+  62      sum((i,j)$(tmNode(t,i) and cust(t,j) and ord(j)<>ord(i)), arc(i,j,t)) =e= 1;
+  63   
+  64  depIn(t)..
+  65      sum((i,j)$(tmNode(t,j) and cust(t,i) and ord(i)<>ord(j)), arc(i,j,t)) =e= 1;
+  66   
+  67  visitOnce(t,nn)$(cust(t,nn) and not tmNode(t,nn))..
+  68      sum(i$(cust(t,i) and ord(i)<>ord(nn)), arc(i,nn,t)) =e= 1;
+  69   
+  70  flowBal(t,nn)$(cust(t,nn) and not tmNode(t,nn))..
+  71      sum(j$(cust(t,j) and ord(j)<>ord(nn)), arc(nn,j,t))
+  72      =e=
+  73      sum(i$(cust(t,i) and ord(i)<>ord(nn)), arc(i,nn,t));
+  74   
+  75  noSelf(i,t)..
+  76      arc(i,i,t) =e= 0;
+  77   
+  78  cap(t)..
+  79      sum(nn$(cust(t,nn) and not tmNode(t,nn)),
+  80          w(nn) * sum(i$(cust(t,i) and ord(i)<>ord(nn)), arc(i,nn,t))
+  81      ) =l= Q;
+  82   
+  83  mtz(i,j,t)$(cust(t,i) and cust(t,j) and ord(i)<>ord(j)
+  84              and (not tmNode(t,i)) and (not tmNode(t,j)))..
+  85      u(i,t) - u(j,t) + card(n)*arc(i,j,t) =l= card(n)-1;
+  86   
+  87  option mip = gurobi;
+  88  Model VRP_Level1 /all/;
+  89  Solve VRP_Level1 using MIP minimizing z1;
+  90   
+  91  execute_unload "rota_sonuc.gdx", arc;
+  92   
+  93   
+  94  File rota /rota_1_kademe.txt/;
+  95  put rota;
+  96   
+  97  put "1. KADEME TOPLAMA ROTLARI" / ;
+  98   
+  99  loop(t,
+ 100      put / "TM: ", t.tl:0 / ;
+ 101   
+ 102      loop((i,j)$(arc.l(i,j,t) > 0.5),
+ 103          put i.tl:0, " -> ", j.tl:0 / ;
+ 104      );
+ 105  );
+ 106   
+ 107  putclose rota;
+ 108   
+ 109  Display z1.l, arc.l;
+
+
+COMPILATION TIME     =        0.000 SECONDS      3 MB  52.2.0 d8e408be WEX-WEI
+GAMS 52.2.0  d8e408be Dec 8, 2025           WEX-WEI x86 64bit/MS Windows - 01/05/26 20:32:04 Page 2
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE VRP_Level1 Using MIP From line 89
+
+
+---- obj1  =E=  
+
+obj1..  - 0.994*arc(f1,f2,tm1) - 0.994*arc(f1,f2,tm2) - 0.811*arc(f1,f3,tm1) - 0.811*arc(f1,f3,tm2) - 1.889*arc(f1,f4,tm1) - 1.889*arc(f1,f4,tm2) - 1.491*arc(f1,f5,tm1) - 1.491*arc(f1,f5,tm2) - 1.684*arc(f1,f6,tm1) - 1.684*arc(f1,f6,tm2) - 1.362*arc(f1,f7,tm1) - 1.362*arc(f1,f7,tm2) - 0.594*arc(f1,f8,tm1) - 0.594*arc(f1,f8,tm2) - 0.641*arc(f1,f9,tm1) - 0.641*arc(f1,f9,tm2) - 0.245*arc(f1,f10,tm1) - 0.245*arc(f1,f10,tm2) - 0.994*arc(f2,f1,tm1) - 0.994*arc(f2,f1,tm2) - 0.079*arc(f2,f3,tm1) - 0.079*arc(f2,f3,tm2) - 10.752*arc(f2,f4,tm1) - 10.752*arc(f2,f4,tm2) - 10.481*arc(f2,f5,tm1) - 10.481*arc(f2,f5,tm2) - 10.516*arc(f2,f6,tm1) - 10.516*arc(f2,f6,tm2) - 10.245*arc(f2,f7,tm1) - 10.245*arc(f2,f7,tm2) - 9.444*arc(f2,f8,tm1) - 9.444*arc(f2,f8,tm2) - 9.018*arc(f2,f9,tm1) - 9.018*arc(f2,f9,tm2) - 9.163*arc(f2,f10,tm1) - 9.163*arc(f2,f10,tm2) - 0.811*arc(f3,f1,tm1) - 0.811*arc(f3,f1,tm2) - 0.079*arc(f3,f2,tm1) - 0.079*arc(f3,f2,tm2) - 2.299*arc(f3,f4,tm1) - 2.299*arc(f3,f4,tm2) - 1.708*arc(f3,f5,tm1) - 1.708*arc(f3,f5,tm2) - 2.147*arc(f3,f6,tm1) - 2.147*arc(f3,f6,tm2) - 1.822*arc(f3,f7,tm1) - 1.822*arc(f3,f7,tm2) - 0.57*arc(f3,f8,tm1) - 0.57*arc(f3,f8,tm2) - 0.175*arc(f3,f9,tm1) - 0.175*arc(f3,f9,tm2) - 0.996*arc(f3,f10,tm1) - 0.996*arc(f3,f10,tm2) - 1.889*arc(f4,f1,tm1) - 1.889*arc(f4,f1,tm2) - 10.752*arc(f4,f2,tm1) - 10.752*arc(f4,f2,tm2) - 2.299*arc(f4,f3,tm1) - 2.299*arc(f4,f3,tm2) - 0.689*arc(f4,f5,tm1) - 0.689*arc(f4,f5,tm2) - 0.239*arc(f4,f6,tm1) - 0.239*arc(f4,f6,tm2) - 0.529*arc(f4,f7,tm1) - 0.529*arc(f4,f7,tm2) - 1.73*arc(f4,f8,tm1) - 1.73*arc(f4,f8,tm2) - 2.224*arc(f4,f9,tm1) - 2.224*arc(f4,f9,tm2) - 1.667*arc(f4,f10,tm1) - 1.667*arc(f4,f10,tm2) - 1.491*arc(f5,f1,tm1) - 1.491*arc(f5,f1,tm2) - 10.481*arc(f5,f2,tm1) - 10.481*arc(f5,f2,tm2) - 1.708*arc(f5,f3,tm1) - 1.708*arc(f5,f3,tm2) - 0.689*arc(f5,f4,tm1) - 0.689*arc(f5,f4,tm2) - 0.666*arc(f5,f6,tm1) - 0.666*arc(f5,f6,tm2) - 0.525*arc(f5,f7,tm1) - 0.525*arc(f5,f7,tm2) - 1.162*arc(f5,f8,tm1) - 1.162*arc(f5,f8,tm2) - 2.06*arc(f5,f9,tm1) - 2.06*arc(f5,f9,tm2) - 1.321*arc(f5,f10,tm1) - 1.321*arc(f5,f10,tm2) - 1.684*arc(f6,f1,tm1) - 1.684*arc(f6,f1,tm2) - 10.516*arc(f6,f2,tm1) - 10.516*arc(f6,f2,tm2) - 2.147*arc(f6,f3,tm1) - 2.147*arc(f6,f3,tm2) - 0.239*arc(f6,f4,tm1) - 0.239*arc(f6,f4,tm2) - 0.666*arc(f6,f5,tm1) - 0.666*arc(f6,f5,tm2) - 0.33*arc(f6,f7,tm1) - 0.33*arc(f6,f7,tm2) - 1.577*arc(f6,f8,tm1) - 1.577*arc(f6,f8,tm2) - 2.06*arc(f6,f9,tm1) - 2.06*arc(f6,f9,tm2) - 1.456*arc(f6,f10,tm1) - 1.456*arc(f6,f10,tm2) - 1.362*arc(f7,f1,tm1) - 1.362*arc(f7,f1,tm2) - 10.245*arc(f7,f2,tm1) - 10.245*arc(f7,f2,tm2) - 1.822*arc(f7,f3,tm1) - 1.822*arc(f7,f3,tm2) - 0.529*arc(f7,f4,tm1) - 0.529*arc(f7,f4,tm2) - 0.525*arc(f7,f5,tm1) - 0.525*arc(f7,f5,tm2) - 0.33*arc(f7,f6,tm1) - 0.33*arc(f7,f6,tm2) - 1.253*arc(f7,f8,tm1) - 1.253*arc(f7,f8,tm2) - 1.732*arc(f7,f9,tm1) - 1.732*arc(f7,f9,tm2) - 1.138*arc(f7,f10,tm1) - 1.138*arc(f7,f10,tm2) - 0.594*arc(f8,f1,tm1) - 0.594*arc(f8,f1,tm2) - 9.444*arc(f8,f2,tm1) - 9.444*arc(f8,f2,tm2) - 0.57*arc(f8,f3,tm1) - 0.57*arc(f8,f3,tm2) - 1.73*arc(f8,f4,tm1) - 1.73*arc(f8,f4,tm2) - 1.162*arc(f8,f5,tm1) - 1.162*arc(f8,f5,tm2) - 1.577*arc(f8,f6,tm1) - 1.577*arc(f8,f6,tm2) - 1.253*arc(f8,f7,tm1) - 1.253*arc(f8,f7,tm2) - 0.505*arc(f8,f9,tm1) - 0.505*arc(f8,f9,tm2) - 0.638*arc(f8,f10,tm1) - 0.638*arc(f8,f10,tm2) - 0.641*arc(f9,f1,tm1) - 0.641*arc(f9,f1,tm2) - 9.018*arc(f9,f2,tm1) - 9.018*arc(f9,f2,tm2) - 0.175*arc(f9,f3,tm1) - 0.175*arc(f9,f3,tm2) - 2.224*arc(f9,f4,tm1) - 2.224*arc(f9,f4,tm2) - 2.06*arc(f9,f5,tm1) - 2.06*arc(f9,f5,tm2) - 2.06*arc(f9,f6,tm1) - 2.06*arc(f9,f6,tm2) - 1.732*arc(f9,f7,tm1) - 1.732*arc(f9,f7,tm2) - 0.505*arc(f9,f8,tm1) - 0.505*arc(f9,f8,tm2) - 0.837*arc(f9,f10,tm1) - 0.837*arc(f9,f10,tm2) - 0.245*arc(f10,f1,tm1) - 0.245*arc(f10,f1,tm2) - 9.163*arc(f10,f2,tm1) - 9.163*arc(f10,f2,tm2) - 0.996*arc(f10,f3,tm1) - 0.996*arc(f10,f3,tm2) - 1.667*arc(f10,f4,tm1) - 1.667*arc(f10,f4,tm2) - 1.321*arc(f10,f5,tm1) - 1.321*arc(f10,f5,tm2) - 1.456*arc(f10,f6,tm1) - 1.456*arc(f10,f6,tm2) - 1.138*arc(f10,f7,tm1) - 1.138*arc(f10,f7,tm2) - 0.638*arc(f10,f8,tm1) - 0.638*arc(f10,f8,tm2) - 0.837*arc(f10,f9,tm1) - 0.837*arc(f10,f9,tm2) + z1 =E= 0 ; (LHS = 0)
+     
+
+---- depOut  =E=  
+
+depOut(tm1)..  arc(f2,f1,tm1) + arc(f2,f3,tm1) =E= 1 ; (LHS = 0, INFES = 1 ****)
+     
+depOut(tm2)..  arc(f8,f4,tm2) + arc(f8,f5,tm2) + arc(f8,f6,tm2) + arc(f8,f7,tm2) + arc(f8,f9,tm2) + arc(f8,f10,tm2) =E= 1 ; (LHS = 0, INFES = 1 ****)
+     
+
+---- depIn  =E=  
+
+depIn(tm1)..  arc(f1,f2,tm1) + arc(f3,f2,tm1) =E= 1 ; (LHS = 0, INFES = 1 ****)
+     
+depIn(tm2)..  arc(f4,f8,tm2) + arc(f5,f8,tm2) + arc(f6,f8,tm2) + arc(f7,f8,tm2) + arc(f9,f8,tm2) + arc(f10,f8,tm2) =E= 1 ; (LHS = 0, INFES = 1 ****)
+     
+
+---- visitOnce  =E=  
+
+visitOnce(tm1,f1)..  arc(f2,f1,tm1) + arc(f3,f1,tm1) =E= 1 ; (LHS = 0, INFES = 1 ****)
+     
+visitOnce(tm1,f3)..  arc(f1,f3,tm1) + arc(f2,f3,tm1) =E= 1 ; (LHS = 0, INFES = 1 ****)
+     
+visitOnce(tm2,f4)..  arc(f5,f4,tm2) + arc(f6,f4,tm2) + arc(f7,f4,tm2) + arc(f8,f4,tm2) + arc(f9,f4,tm2) + arc(f10,f4,tm2) =E= 1 ; (LHS = 0, INFES = 1 ****)
+     
+REMAINING 5 ENTRIES SKIPPED
+
+
+---- flowBal  =E=  
+
+flowBal(tm1,f1)..  arc(f1,f2,tm1) + arc(f1,f3,tm1) - arc(f2,f1,tm1) - arc(f3,f1,tm1) =E= 0 ; (LHS = 0)
+     
+flowBal(tm1,f3)..  - arc(f1,f3,tm1) - arc(f2,f3,tm1) + arc(f3,f1,tm1) + arc(f3,f2,tm1) =E= 0 ; (LHS = 0)
+     
+flowBal(tm2,f4)..  arc(f4,f5,tm2) + arc(f4,f6,tm2) + arc(f4,f7,tm2) + arc(f4,f8,tm2) + arc(f4,f9,tm2) + arc(f4,f10,tm2) - arc(f5,f4,tm2) - arc(f6,f4,tm2) - arc(f7,f4,tm2) - arc(f8,f4,tm2) - arc(f9,f4,tm2) - arc(f10,f4,tm2) =E= 0 ; (LHS = 0)
+     
+REMAINING 5 ENTRIES SKIPPED
+
+
+---- noSelf  =E=  
+
+noSelf(f1,tm1)..  arc(f1,f1,tm1) =E= 0 ; (LHS = 0)
+     
+noSelf(f1,tm2)..  arc(f1,f1,tm2) =E= 0 ; (LHS = 0)
+     
+noSelf(f2,tm1)..  arc(f2,f2,tm1) =E= 0 ; (LHS = 0)
+     
+REMAINING 17 ENTRIES SKIPPED
+
+
+---- cap  =L=  
+
+cap(tm1)..  120*arc(f1,f3,tm1) + 111*arc(f2,f1,tm1) + 120*arc(f2,f3,tm1) + 111*arc(f3,f1,tm1) =L= 999999 ; (LHS = 0)
+     
+cap(tm2)..  26*arc(f4,f5,tm2) + 117*arc(f4,f6,tm2) + 43*arc(f4,f7,tm2) + 57*arc(f4,f9,tm2) + 67*arc(f4,f10,tm2) + 96*arc(f5,f4,tm2) + 117*arc(f5,f6,tm2) + 43*arc(f5,f7,tm2) + 57*arc(f5,f9,tm2) + 67*arc(f5,f10,tm2) + 96*arc(f6,f4,tm2) + 26*arc(f6,f5,tm2) + 43*arc(f6,f7,tm2) + 57*arc(f6,f9,tm2) + 67*arc(f6,f10,tm2) + 96*arc(f7,f4,tm2) + 26*arc(f7,f5,tm2) + 117*arc(f7,f6,tm2) + 57*arc(f7,f9,tm2) + 67*arc(f7,f10,tm2) + 96*arc(f8,f4,tm2) + 26*arc(f8,f5,tm2) + 117*arc(f8,f6,tm2) + 43*arc(f8,f7,tm2) + 57*arc(f8,f9,tm2) + 67*arc(f8,f10,tm2) + 96*arc(f9,f4,tm2) + 26*arc(f9,f5,tm2) + 117*arc(f9,f6,tm2) + 43*arc(f9,f7,tm2) + 67*arc(f9,f10,tm2) + 96*arc(f10,f4,tm2) + 26*arc(f10,f5,tm2) + 117*arc(f10,f6,tm2) + 43*arc(f10,f7,tm2) + 57*arc(f10,f9,tm2) =L= 999999 ; (LHS = 0)
+     
+
+---- mtz  =L=  
+
+mtz(f1,f3,tm1)..  10*arc(f1,f3,tm1) + u(f1,tm1) - u(f3,tm1) =L= 9 ; (LHS = 0)
+     
+mtz(f3,f1,tm1)..  10*arc(f3,f1,tm1) - u(f1,tm1) + u(f3,tm1) =L= 9 ; (LHS = 0)
+     
+mtz(f4,f5,tm2)..  10*arc(f4,f5,tm2) + u(f4,tm2) - u(f5,tm2) =L= 9 ; (LHS = 0)
+     
+REMAINING 29 ENTRIES SKIPPED
+
+GAMS 52.2.0  d8e408be Dec 8, 2025           WEX-WEI x86 64bit/MS Windows - 01/05/26 20:32:04 Page 3
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE VRP_Level1 Using MIP From line 89
+
+
+---- arc  
+
+arc(f1,f1,tm1)
+                (.LO, .L, .UP, .M = 0, 0, 1, 0)
+        1       noSelf(f1,tm1)
+
+arc(f1,f1,tm2)
+                (.LO, .L, .UP, .M = 0, 0, 1, 0)
+        1       noSelf(f1,tm2)
+
+arc(f1,f2,tm1)
+                (.LO, .L, .UP, .M = 0, 0, 1, 0)
+       -0.994   obj1
+        1       depIn(tm1)
+        1       flowBal(tm1,f1)
+
+REMAINING 197 ENTRIES SKIPPED
+
+---- z1  
+
+z1
+                (.LO, .L, .UP, .M = -INF, 0, +INF, 0)
+        1       obj1
+
+
+---- u  
+
+u(f1,tm1)
+                (.LO, .L, .UP, .M = 0, 0, +INF, 0)
+        1       mtz(f1,f3,tm1)
+       -1       mtz(f3,f1,tm1)
+
+u(f3,tm1)
+                (.LO, .L, .UP, .M = 0, 0, +INF, 0)
+       -1       mtz(f1,f3,tm1)
+        1       mtz(f3,f1,tm1)
+
+u(f4,tm2)
+                (.LO, .L, .UP, .M = 0, 0, +INF, 0)
+        1       mtz(f4,f5,tm2)
+        1       mtz(f4,f6,tm2)
+        1       mtz(f4,f7,tm2)
+        1       mtz(f4,f9,tm2)
+        1       mtz(f4,f10,tm2)
+       -1       mtz(f5,f4,tm2)
+       -1       mtz(f6,f4,tm2)
+       -1       mtz(f7,f4,tm2)
+       -1       mtz(f9,f4,tm2)
+       -1       mtz(f10,f4,tm2)
+
+REMAINING 5 ENTRIES SKIPPED
+GAMS 52.2.0  d8e408be Dec 8, 2025           WEX-WEI x86 64bit/MS Windows - 01/05/26 20:32:04 Page 4
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE VRP_Level1 Using MIP From line 89
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [ 1.000E+00, 1.000E+06] - Zero values observed as well
+Bound     [min, max] : [ 1.000E+00, 1.000E+00] - Zero values observed as well
+Matrix    [min, max] : [ 7.900E-02, 1.200E+02]
+
+GAMS 52.2.0  d8e408be Dec 8, 2025           WEX-WEI x86 64bit/MS Windows - 01/05/26 20:32:04 Page 5
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE VRP_Level1 Using MIP From line 89
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           8     SINGLE EQUATIONS           75
+BLOCKS OF VARIABLES           3     SINGLE VARIABLES          209
+NON ZERO ELEMENTS           473     DISCRETE VARIABLES        200
+
+
+GENERATION TIME      =        0.031 SECONDS      4 MB  52.2.0 d8e408be WEX-WEI
+GAMS 52.2.0  d8e408be Dec 8, 2025           WEX-WEI x86 64bit/MS Windows - 01/05/26 20:32:04 Page 6
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE VRP_Level1 Using MIP From line 89
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   VRP_Level1          OBJECTIVE  z1
+     TYPE    MIP                 DIRECTION  MINIMIZE
+     SOLVER  GUROBI              FROM LINE  89
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      1 Optimal
+**** OBJECTIVE VALUE                6.7840
+
+ RESOURCE USAGE, LIMIT          0.144 10000000000.000
+ ITERATION COUNT, LIMIT        72    2147483647
+
+    Gurobi           52.2.0 d8e408be Dec 8, 2025           WEI x86 64bit/MS Window
+
+
+    Gurobi Optimizer version 13.0.0 build v13.0.0rc1 (win64 - Windows 11+.0 (26200.2))
+    
+    CPU model: Intel(R) Core(TM) i5-10210U CPU @ 1.60GHz, instruction set [SSE2|AVX|AVX2]
+    Thread count: 4 physical cores, 8 logical processors, using up to 8 threads
+    
+    Non-default parameters:
+    MIPGapAbs  0
+    LogToConsole  0
+    
+    Optimize a model with 74 rows, 208 columns and 292 nonzeros (Min)
+    Model fingerprint: 0x45baadc1
+    Model has 180 linear objective coefficients
+    Variable types: 8 continuous, 200 integer (0 binary)
+    Coefficient statistics:
+      Matrix range     [1e+00, 1e+02]
+      Objective range  [8e-02, 1e+01]
+      Bounds range     [1e+00, 1e+00]
+      RHS range        [1e+00, 1e+06]
+    Found heuristic solution: objective 7.6660000
+    Presolve removed 30 rows and 160 columns
+    Presolve time: 0.00s
+    Presolved: 44 rows, 48 columns, 174 nonzeros
+    Variable types: 6 continuous, 42 integer (42 binary)
+    
+    Root relaxation: objective 5.443000e+00, 16 iterations, 0.00 seconds (0.00 work units)
+    
+        Nodes    |    Current Node    |     Objective Bounds      |     Work
+     Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+    
+         0     0    5.44300    0    4    7.66600    5.44300  29.0%     -    0s
+    H    0     0                       7.3380000    5.44300  25.8%     -    0s
+    H    0     0                       7.1490000    5.44300  23.9%     -    0s
+         0     0    5.73100    0    8    7.14900    5.73100  19.8%     -    0s
+    H    0     0                       7.0580000    5.73100  18.8%     -    0s
+         0     0    6.07100    0    8    7.05800    6.07100  14.0%     -    0s
+    H    0     0                       6.7840000    6.07100  10.5%     -    0s
+         0     0    6.21520    0    8    6.78400    6.21520  8.38%     -    0s
+         0     0    6.39520    0    8    6.78400    6.39520  5.73%     -    0s
+         0     0    6.63400    0    8    6.78400    6.63400  2.21%     -    0s
+         0     0    6.63400    0    8    6.78400    6.63400  2.21%     -    0s
+         0     0    6.63400    0    8    6.78400    6.63400  2.21%     -    0s
+         0     0    6.63400    0    4    6.78400    6.63400  2.21%     -    0s
+         0     0    6.63400    0    8    6.78400    6.63400  2.21%     -    0s
+         0     0    6.63400    0   10    6.78400    6.63400  2.21%     -    0s
+    
+    Cutting planes:
+      Learned: 2
+      Gomory: 5
+      Cover: 1
+      MIR: 3
+      RLT: 1
+    
+    Explored 1 nodes (72 simplex iterations) in 0.12 seconds (0.01 work units)
+    Thread count was 8 (of 8 available processors)
+    
+    Solution count 5: 6.784 7.058 7.149 ... 7.666
+    
+    Optimal solution found (tolerance 1.00e-04)
+    Best objective 6.784000000000e+00, best bound 6.784000000000e+00, gap 0.0000%
+    
+    User-callback calls 15, time in user-callback 0.00 sec
+
+... Solving fixed model...
+
+    Gurobi Optimizer version 13.0.0 build v13.0.0rc1 (win64 - Windows 11+.0 (26200.2))
+    
+    CPU model: Intel(R) Core(TM) i5-10210U CPU @ 1.60GHz, instruction set [SSE2|AVX|AVX2]
+    Thread count: 4 physical cores, 8 logical processors, using up to 8 threads
+    
+    Non-default parameters:
+    MIPGapAbs  0
+    LogToConsole  0
+    
+    Optimize a model with 74 rows, 208 columns and 292 nonzeros (Min)
+    Model fingerprint: 0xaebd22fe
+    Model has 180 linear objective coefficients
+    Coefficient statistics:
+      Matrix range     [1e+00, 1e+02]
+      Objective range  [8e-02, 1e+01]
+      Bounds range     [1e+00, 1e+00]
+      RHS range        [1e+00, 1e+06]
+    Presolve removed 74 rows and 208 columns
+    Presolve time: 0.00s
+    Presolve: All rows and columns removed
+    Iteration    Objective       Primal Inf.    Dual Inf.      Time
+           0    6.7840000e+00   0.000000e+00   0.000000e+00      0s
+    
+    Solved in 0 iterations and 0.00 seconds (0.00 work units)
+    Optimal objective  6.784000000e+00
+    
+    User-callback calls 0, time in user-callback 0.00 sec
+
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU obj1                .              .              .             1.0000      
+
+---- EQU depOut  
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+tm1         1.0000         1.0000         1.0000          .          
+tm2         1.0000         1.0000         1.0000          .          
+
+---- EQU depIn  
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+tm1         1.0000         1.0000         1.0000          .          
+tm2         1.0000         1.0000         1.0000          .          
+
+---- EQU visitOnce  
+
+               LOWER          LEVEL          UPPER         MARGINAL
+
+tm1.f1          1.0000         1.0000         1.0000          .          
+tm1.f3          1.0000         1.0000         1.0000          .          
+tm2.f4          1.0000         1.0000         1.0000          .          
+tm2.f5          1.0000         1.0000         1.0000          .          
+tm2.f6          1.0000         1.0000         1.0000          .          
+tm2.f7          1.0000         1.0000         1.0000          .          
+tm2.f9          1.0000         1.0000         1.0000          .          
+tm2.f10         1.0000         1.0000         1.0000          .          
+
+---- EQU flowBal  
+
+               LOWER          LEVEL          UPPER         MARGINAL
+
+tm1.f1           .              .              .              .          
+tm1.f3           .              .              .              .          
+tm2.f4           .              .              .              .          
+tm2.f5           .              .              .              .          
+tm2.f6           .              .              .              .          
+tm2.f7           .              .              .              .          
+tm2.f9           .              .              .              .          
+tm2.f10          .              .              .              .          
+
+---- EQU noSelf  
+
+               LOWER          LEVEL          UPPER         MARGINAL
+
+f1 .tm1          .              .              .              .          
+f1 .tm2          .              .              .              .          
+f2 .tm1          .              .              .              .          
+f2 .tm2          .              .              .              .          
+f3 .tm1          .              .              .              .          
+f3 .tm2          .              .              .              .          
+f4 .tm1          .              .              .              .          
+f4 .tm2          .              .              .              .          
+f5 .tm1          .              .              .              .          
+f5 .tm2          .              .              .              .          
+f6 .tm1          .              .              .              .          
+f6 .tm2          .              .              .              .          
+f7 .tm1          .              .              .              .          
+f7 .tm2          .              .              .              .          
+f8 .tm1          .              .              .              .          
+f8 .tm2          .              .              .              .          
+f9 .tm1          .              .              .              .          
+f9 .tm2          .              .              .              .          
+f10.tm1          .              .              .              .          
+f10.tm2          .              .              .              .          
+
+---- EQU cap  
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+tm1        -INF          231.0000    999999.0000          .          
+tm2        -INF          406.0000    999999.0000          .          
+
+---- EQU mtz  
+
+                   LOWER          LEVEL          UPPER         MARGINAL
+
+f1 .f3 .tm1        -INF            9.0000         9.0000         EPS         
+f3 .f1 .tm1        -INF            1.0000         9.0000          .          
+f4 .f5 .tm2        -INF            9.0000         9.0000         EPS         
+f4 .f6 .tm2        -INF            1.0000         9.0000          .          
+f4 .f7 .tm2        -INF            2.0000         9.0000          .          
+f4 .f9 .tm2        -INF            8.0000         9.0000          .          
+f4 .f10.tm2        -INF            3.0000         9.0000          .          
+f5 .f4 .tm2        -INF            1.0000         9.0000          .          
+f5 .f6 .tm2        -INF            2.0000         9.0000          .          
+f5 .f7 .tm2        -INF            3.0000         9.0000          .          
+f5 .f9 .tm2        -INF            9.0000         9.0000         EPS         
+f5 .f10.tm2        -INF            4.0000         9.0000          .          
+f6 .f4 .tm2        -INF            9.0000         9.0000         EPS         
+f6 .f5 .tm2        -INF           -2.0000         9.0000          .          
+f6 .f7 .tm2        -INF            1.0000         9.0000          .          
+f6 .f9 .tm2        -INF            7.0000         9.0000          .          
+f6 .f10.tm2        -INF            2.0000         9.0000          .          
+f7 .f4 .tm2        -INF           -2.0000         9.0000          .          
+f7 .f5 .tm2        -INF           -3.0000         9.0000          .          
+f7 .f6 .tm2        -INF            9.0000         9.0000         EPS         
+f7 .f9 .tm2        -INF            6.0000         9.0000          .          
+f7 .f10.tm2        -INF            1.0000         9.0000          .          
+f9 .f4 .tm2        -INF           -8.0000         9.0000          .          
+f9 .f5 .tm2        -INF           -9.0000         9.0000          .          
+f9 .f6 .tm2        -INF           -7.0000         9.0000          .          
+f9 .f7 .tm2        -INF           -6.0000         9.0000          .          
+f9 .f10.tm2        -INF            5.0000         9.0000          .          
+f10.f4 .tm2        -INF           -3.0000         9.0000          .          
+f10.f5 .tm2        -INF           -4.0000         9.0000          .          
+f10.f6 .tm2        -INF           -2.0000         9.0000          .          
+f10.f7 .tm2        -INF            9.0000         9.0000         EPS         
+f10.f9 .tm2        -INF            5.0000         9.0000          .          
+
+---- VAR arc  
+
+                   LOWER          LEVEL          UPPER         MARGINAL
+
+f1 .f1 .tm1          .              .             1.0000         EPS         
+f1 .f1 .tm2          .              .             1.0000         EPS         
+f1 .f2 .tm1          .             1.0000         1.0000         0.9940      
+f1 .f2 .tm2          .              .             1.0000         0.9940      
+f1 .f3 .tm1          .              .             1.0000         0.8110      
+f1 .f3 .tm2          .              .             1.0000         0.8110      
+f1 .f4 .tm1          .              .             1.0000         1.8890      
+f1 .f4 .tm2          .              .             1.0000         1.8890      
+f1 .f5 .tm1          .              .             1.0000         1.4910      
+f1 .f5 .tm2          .              .             1.0000         1.4910      
+f1 .f6 .tm1          .              .             1.0000         1.6840      
+f1 .f6 .tm2          .              .             1.0000         1.6840      
+f1 .f7 .tm1          .              .             1.0000         1.3620      
+f1 .f7 .tm2          .              .             1.0000         1.3620      
+f1 .f8 .tm1          .              .             1.0000         0.5940      
+f1 .f8 .tm2          .              .             1.0000         0.5940      
+f1 .f9 .tm1          .              .             1.0000         0.6410      
+f1 .f9 .tm2          .              .             1.0000         0.6410      
+f1 .f10.tm1          .              .             1.0000         0.2450      
+f1 .f10.tm2          .              .             1.0000         0.2450      
+f2 .f1 .tm1          .              .             1.0000         0.9940      
+f2 .f1 .tm2          .              .             1.0000         0.9940      
+f2 .f2 .tm1          .              .             1.0000         EPS         
+f2 .f2 .tm2          .              .             1.0000         EPS         
+f2 .f3 .tm1          .             1.0000         1.0000         0.0790      
+f2 .f3 .tm2          .              .             1.0000         0.0790      
+f2 .f4 .tm1          .              .             1.0000        10.7520      
+f2 .f4 .tm2          .              .             1.0000        10.7520      
+f2 .f5 .tm1          .              .             1.0000        10.4810      
+f2 .f5 .tm2          .              .             1.0000        10.4810      
+f2 .f6 .tm1          .              .             1.0000        10.5160      
+f2 .f6 .tm2          .              .             1.0000        10.5160      
+f2 .f7 .tm1          .              .             1.0000        10.2450      
+f2 .f7 .tm2          .              .             1.0000        10.2450      
+f2 .f8 .tm1          .              .             1.0000         9.4440      
+f2 .f8 .tm2          .              .             1.0000         9.4440      
+f2 .f9 .tm1          .              .             1.0000         9.0180      
+f2 .f9 .tm2          .              .             1.0000         9.0180      
+f2 .f10.tm1          .              .             1.0000         9.1630      
+f2 .f10.tm2          .              .             1.0000         9.1630      
+f3 .f1 .tm1          .             1.0000         1.0000         0.8110      
+f3 .f1 .tm2          .              .             1.0000         0.8110      
+f3 .f2 .tm1          .              .             1.0000         0.0790      
+f3 .f2 .tm2          .              .             1.0000         0.0790      
+f3 .f3 .tm1          .              .             1.0000         EPS         
+f3 .f3 .tm2          .              .             1.0000         EPS         
+f3 .f4 .tm1          .              .             1.0000         2.2990      
+f3 .f4 .tm2          .              .             1.0000         2.2990      
+f3 .f5 .tm1          .              .             1.0000         1.7080      
+f3 .f5 .tm2          .              .             1.0000         1.7080      
+f3 .f6 .tm1          .              .             1.0000         2.1470      
+f3 .f6 .tm2          .              .             1.0000         2.1470      
+f3 .f7 .tm1          .              .             1.0000         1.8220      
+f3 .f7 .tm2          .              .             1.0000         1.8220      
+f3 .f8 .tm1          .              .             1.0000         0.5700      
+f3 .f8 .tm2          .              .             1.0000         0.5700      
+f3 .f9 .tm1          .              .             1.0000         0.1750      
+f3 .f9 .tm2          .              .             1.0000         0.1750      
+f3 .f10.tm1          .              .             1.0000         0.9960      
+f3 .f10.tm2          .              .             1.0000         0.9960      
+f4 .f1 .tm1          .              .             1.0000         1.8890      
+f4 .f1 .tm2          .              .             1.0000         1.8890      
+f4 .f2 .tm1          .              .             1.0000        10.7520      
+f4 .f2 .tm2          .              .             1.0000        10.7520      
+f4 .f3 .tm1          .              .             1.0000         2.2990      
+f4 .f3 .tm2          .              .             1.0000         2.2990      
+f4 .f4 .tm1          .              .             1.0000         EPS         
+f4 .f4 .tm2          .              .             1.0000         EPS         
+f4 .f5 .tm1          .              .             1.0000         0.6890      
+f4 .f5 .tm2          .             1.0000         1.0000         0.6890      
+f4 .f6 .tm1          .              .             1.0000         0.2390      
+f4 .f6 .tm2          .              .             1.0000         0.2390      
+f4 .f7 .tm1          .              .             1.0000         0.5290      
+f4 .f7 .tm2          .              .             1.0000         0.5290      
+f4 .f8 .tm1          .              .             1.0000         1.7300      
+f4 .f8 .tm2          .              .             1.0000         1.7300      
+f4 .f9 .tm1          .              .             1.0000         2.2240      
+f4 .f9 .tm2          .              .             1.0000         2.2240      
+f4 .f10.tm1          .              .             1.0000         1.6670      
+f4 .f10.tm2          .              .             1.0000         1.6670      
+f5 .f1 .tm1          .              .             1.0000         1.4910      
+f5 .f1 .tm2          .              .             1.0000         1.4910      
+f5 .f2 .tm1          .              .             1.0000        10.4810      
+f5 .f2 .tm2          .              .             1.0000        10.4810      
+f5 .f3 .tm1          .              .             1.0000         1.7080      
+f5 .f3 .tm2          .              .             1.0000         1.7080      
+f5 .f4 .tm1          .              .             1.0000         0.6890      
+f5 .f4 .tm2          .              .             1.0000         0.6890      
+f5 .f5 .tm1          .              .             1.0000         EPS         
+f5 .f5 .tm2          .              .             1.0000         EPS         
+f5 .f6 .tm1          .              .             1.0000         0.6660      
+f5 .f6 .tm2          .              .             1.0000         0.6660      
+f5 .f7 .tm1          .              .             1.0000         0.5250      
+f5 .f7 .tm2          .              .             1.0000         0.5250      
+f5 .f8 .tm1          .              .             1.0000         1.1620      
+f5 .f8 .tm2          .             1.0000         1.0000         1.1620      
+f5 .f9 .tm1          .              .             1.0000         2.0600      
+f5 .f9 .tm2          .              .             1.0000         2.0600      
+f5 .f10.tm1          .              .             1.0000         1.3210      
+f5 .f10.tm2          .              .             1.0000         1.3210      
+f6 .f1 .tm1          .              .             1.0000         1.6840      
+f6 .f1 .tm2          .              .             1.0000         1.6840      
+f6 .f2 .tm1          .              .             1.0000        10.5160      
+f6 .f2 .tm2          .              .             1.0000        10.5160      
+f6 .f3 .tm1          .              .             1.0000         2.1470      
+f6 .f3 .tm2          .              .             1.0000         2.1470      
+f6 .f4 .tm1          .              .             1.0000         0.2390      
+f6 .f4 .tm2          .             1.0000         1.0000         0.2390      
+f6 .f5 .tm1          .              .             1.0000         0.6660      
+f6 .f5 .tm2          .              .             1.0000         0.6660      
+f6 .f6 .tm1          .              .             1.0000         EPS         
+f6 .f6 .tm2          .              .             1.0000         EPS         
+f6 .f7 .tm1          .              .             1.0000         0.3300      
+f6 .f7 .tm2          .              .             1.0000         0.3300      
+f6 .f8 .tm1          .              .             1.0000         1.5770      
+f6 .f8 .tm2          .              .             1.0000         1.5770      
+f6 .f9 .tm1          .              .             1.0000         2.0600      
+f6 .f9 .tm2          .              .             1.0000         2.0600      
+f6 .f10.tm1          .              .             1.0000         1.4560      
+f6 .f10.tm2          .              .             1.0000         1.4560      
+f7 .f1 .tm1          .              .             1.0000         1.3620      
+f7 .f1 .tm2          .              .             1.0000         1.3620      
+f7 .f2 .tm1          .              .             1.0000        10.2450      
+f7 .f2 .tm2          .              .             1.0000        10.2450      
+f7 .f3 .tm1          .              .             1.0000         1.8220      
+f7 .f3 .tm2          .              .             1.0000         1.8220      
+f7 .f4 .tm1          .              .             1.0000         0.5290      
+f7 .f4 .tm2          .              .             1.0000         0.5290      
+f7 .f5 .tm1          .              .             1.0000         0.5250      
+f7 .f5 .tm2          .              .             1.0000         0.5250      
+f7 .f6 .tm1          .              .             1.0000         0.3300      
+f7 .f6 .tm2          .             1.0000         1.0000         0.3300      
+f7 .f7 .tm1          .              .             1.0000         EPS         
+f7 .f7 .tm2          .              .             1.0000         EPS         
+f7 .f8 .tm1          .              .             1.0000         1.2530      
+f7 .f8 .tm2          .              .             1.0000         1.2530      
+f7 .f9 .tm1          .              .             1.0000         1.7320      
+f7 .f9 .tm2          .              .             1.0000         1.7320      
+f7 .f10.tm1          .              .             1.0000         1.1380      
+f7 .f10.tm2          .              .             1.0000         1.1380      
+f8 .f1 .tm1          .              .             1.0000         0.5940      
+f8 .f1 .tm2          .              .             1.0000         0.5940      
+f8 .f2 .tm1          .              .             1.0000         9.4440      
+f8 .f2 .tm2          .              .             1.0000         9.4440      
+f8 .f3 .tm1          .              .             1.0000         0.5700      
+f8 .f3 .tm2          .              .             1.0000         0.5700      
+f8 .f4 .tm1          .              .             1.0000         1.7300      
+f8 .f4 .tm2          .              .             1.0000         1.7300      
+f8 .f5 .tm1          .              .             1.0000         1.1620      
+f8 .f5 .tm2          .              .             1.0000         1.1620      
+f8 .f6 .tm1          .              .             1.0000         1.5770      
+f8 .f6 .tm2          .              .             1.0000         1.5770      
+f8 .f7 .tm1          .              .             1.0000         1.2530      
+f8 .f7 .tm2          .              .             1.0000         1.2530      
+f8 .f8 .tm1          .              .             1.0000         EPS         
+f8 .f8 .tm2          .              .             1.0000         EPS         
+f8 .f9 .tm1          .              .             1.0000         0.5050      
+f8 .f9 .tm2          .             1.0000         1.0000         0.5050      
+f8 .f10.tm1          .              .             1.0000         0.6380      
+f8 .f10.tm2          .              .             1.0000         0.6380      
+f9 .f1 .tm1          .              .             1.0000         0.6410      
+f9 .f1 .tm2          .              .             1.0000         0.6410      
+f9 .f2 .tm1          .              .             1.0000         9.0180      
+f9 .f2 .tm2          .              .             1.0000         9.0180      
+f9 .f3 .tm1          .              .             1.0000         0.1750      
+f9 .f3 .tm2          .              .             1.0000         0.1750      
+f9 .f4 .tm1          .              .             1.0000         2.2240      
+f9 .f4 .tm2          .              .             1.0000         2.2240      
+f9 .f5 .tm1          .              .             1.0000         2.0600      
+f9 .f5 .tm2          .              .             1.0000         2.0600      
+f9 .f6 .tm1          .              .             1.0000         2.0600      
+f9 .f6 .tm2          .              .             1.0000         2.0600      
+f9 .f7 .tm1          .              .             1.0000         1.7320      
+f9 .f7 .tm2          .              .             1.0000         1.7320      
+f9 .f8 .tm1          .              .             1.0000         0.5050      
+f9 .f8 .tm2          .              .             1.0000         0.5050      
+f9 .f9 .tm1          .              .             1.0000         EPS         
+f9 .f9 .tm2          .              .             1.0000         EPS         
+f9 .f10.tm1          .              .             1.0000         0.8370      
+f9 .f10.tm2          .             1.0000         1.0000         0.8370      
+f10.f1 .tm1          .              .             1.0000         0.2450      
+f10.f1 .tm2          .              .             1.0000         0.2450      
+f10.f2 .tm1          .              .             1.0000         9.1630      
+f10.f2 .tm2          .              .             1.0000         9.1630      
+f10.f3 .tm1          .              .             1.0000         0.9960      
+f10.f3 .tm2          .              .             1.0000         0.9960      
+f10.f4 .tm1          .              .             1.0000         1.6670      
+f10.f4 .tm2          .              .             1.0000         1.6670      
+f10.f5 .tm1          .              .             1.0000         1.3210      
+f10.f5 .tm2          .              .             1.0000         1.3210      
+f10.f6 .tm1          .              .             1.0000         1.4560      
+f10.f6 .tm2          .              .             1.0000         1.4560      
+f10.f7 .tm1          .              .             1.0000         1.1380      
+f10.f7 .tm2          .             1.0000         1.0000         1.1380      
+f10.f8 .tm1          .              .             1.0000         0.6380      
+f10.f8 .tm2          .              .             1.0000         0.6380      
+f10.f9 .tm1          .              .             1.0000         0.8370      
+f10.f9 .tm2          .              .             1.0000         0.8370      
+f10.f10.tm1          .              .             1.0000         EPS         
+f10.f10.tm2          .              .             1.0000         EPS         
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR z1                -INF            6.7840        +INF             .          
+
+---- VAR u  
+
+               LOWER          LEVEL          UPPER         MARGINAL
+
+f1 .tm1          .             9.0000        +INF             .          
+f3 .tm1          .              .            +INF            EPS         
+f4 .tm2          .             8.0000        +INF             .          
+f5 .tm2          .             9.0000        +INF             .          
+f6 .tm2          .             7.0000        +INF             .          
+f7 .tm2          .             6.0000        +INF             .          
+f9 .tm2          .              .            +INF            EPS         
+f10.tm2          .             5.0000        +INF             .          
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+GAMS 52.2.0  d8e408be Dec 8, 2025           WEX-WEI x86 64bit/MS Windows - 01/05/26 20:32:04 Page 7
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----    109 VARIABLE z1.L                  =        6.784  
+
+----    109 VARIABLE arc.L  
+
+                tm1         tm2
+
+f1 .f2        1.000
+f2 .f3        1.000
+f3 .f1        1.000
+f4 .f5                    1.000
+f5 .f8                    1.000
+f6 .f4                    1.000
+f7 .f6                    1.000
+f8 .f9                    1.000
+f9 .f10                   1.000
+f10.f7                    1.000
+
+
+**** REPORT FILE SUMMARY
+
+rota C:\Users\Lenovo\Desktop\BTRME_~1\rota_1_kademe.txt
+
+
+EXECUTION TIME       =        0.375 SECONDS      5 MB  52.2.0 d8e408be WEX-WEI
+
+
+USER: GAMS Demo, for EULA and demo limitations see   G251112+0003Cc-GEN
+      https://www.gams.com/latest/docs/UG%5FLicense.html         DC0000
+
+
+**** FILE SUMMARY
+
+Input      C:\Users\Lenovo\Desktop\aaaaa\tm-firma rota.gms
+Output     C:\Users\Lenovo\Desktop\BTRME_~1\tm-firma rota.lst

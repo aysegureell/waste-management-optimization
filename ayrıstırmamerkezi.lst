@@ -1,0 +1,245 @@
+GAMS 52.2.0  d8e408be Dec 8, 2025           WEX-WEI x86 64bit/MS Windows - 01/05/26 20:27:32 Page 1
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+C o m p i l a t i o n
+
+
+   1  Sets
+   2      i   "Firmalar / AM adaylari" /f1*f10/
+   3      t   "Toplama Merkezleri"     /tm1, tm2/;
+   4   
+   5  Parameters
+   6      load(t)        "Toplama merkezlerinin toplam yukleri"
+   7      distTM(i,t)    "TM -> firma mesafesi (km)";
+   8   
+   9   
+  10  load('tm1') = 51;
+  11  load('tm2') = 772;
+  12   
+  13  Table distTM(i,t)
+  14            tm1     tm2
+  15  f1        8.9941  0.5941
+  16  f2        0.0000  9.4444
+  17  f3        9.0788  0.5704
+  18  f4       10.7521  1.7296
+  19  f5       10.4811  1.1618
+  20  f6       10.5163  1.5768
+  21  f7       10.2452  1.2529
+  22  f8        9.4444  0.0000
+  23  f9        9.0175  0.5046
+  24  f10       9.1628  0.6382
+  25  ;
+  26   
+  27  Binary Variables
+  28      y(i);
+  29   
+  30  Variable
+  31      z;
+  32   
+  33  Equations
+  34      obj
+  35      oneAM;
+  36   
+  37   
+  38  obj..
+  39      z =e= sum((i,t), load(t) * distTM(i,t) * y(i));
+  40   
+  41   
+  42  oneAM..
+  43      sum(i, y(i)) =e= 1;
+  44   
+  45   
+  46  Model AM_pmedian_TM /all/;
+  47  Solve AM_pmedian_TM using MIP minimizing z;
+  48   
+  49  Display z.l, y.l;
+  50   
+  51   
+  52  Scalar z_check;
+  53  z_check = load('tm1')*distTM('f8','tm1') + load('tm2')*distTM('f8','tm2');
+  54  Display z_check, distTM;
+
+
+COMPILATION TIME     =        0.000 SECONDS      3 MB  52.2.0 d8e408be WEX-WEI
+GAMS 52.2.0  d8e408be Dec 8, 2025           WEX-WEI x86 64bit/MS Windows - 01/05/26 20:27:32 Page 2
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE AM_pmedian_TM Using MIP From line 47
+
+
+---- obj  =E=  
+
+obj..  - 917.3443*y(f1) - 7291.0768*y(f2) - 903.3676*y(f3) - 1883.6083*y(f4) - 1431.4457*y(f5) - 1753.6209*y(f6) - 1489.744*y(f7) - 481.6644*y(f8) - 849.4437*y(f9) - 959.9932*y(f10) + z =E= 0 ; (LHS = 0)
+     
+
+---- oneAM  =E=  
+
+oneAM..  y(f1) + y(f2) + y(f3) + y(f4) + y(f5) + y(f6) + y(f7) + y(f8) + y(f9) + y(f10) =E= 1 ; (LHS = 0, INFES = 1 ****)
+     
+GAMS 52.2.0  d8e408be Dec 8, 2025           WEX-WEI x86 64bit/MS Windows - 01/05/26 20:27:32 Page 3
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE AM_pmedian_TM Using MIP From line 47
+
+
+---- y  
+
+y(f1)
+                (.LO, .L, .UP, .M = 0, 0, 1, 0)
+     -917.3443  obj
+        1       oneAM
+
+y(f2)
+                (.LO, .L, .UP, .M = 0, 0, 1, 0)
+    -7291.0768  obj
+        1       oneAM
+
+y(f3)
+                (.LO, .L, .UP, .M = 0, 0, 1, 0)
+     -903.3676  obj
+        1       oneAM
+
+REMAINING 7 ENTRIES SKIPPED
+
+---- z  
+
+z
+                (.LO, .L, .UP, .M = -INF, 0, +INF, 0)
+        1       obj
+
+GAMS 52.2.0  d8e408be Dec 8, 2025           WEX-WEI x86 64bit/MS Windows - 01/05/26 20:27:32 Page 4
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Range Statistics    SOLVE AM_pmedian_TM Using MIP From line 47
+
+
+RANGE STATISTICS (ABSOLUTE NON-ZERO FINITE VALUES)
+
+RHS       [min, max] : [ 1.000E+00, 1.000E+00] - Zero values observed as well
+Bound     [min, max] : [ 1.000E+00, 1.000E+00] - Zero values observed as well
+Matrix    [min, max] : [ 1.000E+00, 7.291E+03]
+
+GAMS 52.2.0  d8e408be Dec 8, 2025           WEX-WEI x86 64bit/MS Windows - 01/05/26 20:27:32 Page 5
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE AM_pmedian_TM Using MIP From line 47
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           2     SINGLE EQUATIONS            2
+BLOCKS OF VARIABLES           2     SINGLE VARIABLES           11
+NON ZERO ELEMENTS            21     DISCRETE VARIABLES         10
+
+
+GENERATION TIME      =        0.031 SECONDS      4 MB  52.2.0 d8e408be WEX-WEI
+GAMS 52.2.0  d8e408be Dec 8, 2025           WEX-WEI x86 64bit/MS Windows - 01/05/26 20:27:32 Page 6
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE AM_pmedian_TM Using MIP From line 47
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   AM_pmedian_TM       OBJECTIVE  z
+     TYPE    MIP                 DIRECTION  MINIMIZE
+     SOLVER  CPLEX               FROM LINE  47
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      1 Optimal
+**** OBJECTIVE VALUE              481.6644
+
+ RESOURCE USAGE, LIMIT          0.016 10000000000.000
+ ITERATION COUNT, LIMIT         0    2147483647
+*** This solver runs with a demo license. No commercial use.
+--- GMO setup time: 0.00s
+--- GMO memory 0.50 Mb (peak 0.50 Mb)
+--- Dictionary memory 0.00 Mb
+--- Cplex 22.1.2.0 link memory 0.00 Mb (peak 0.00 Mb)
+--- Starting Cplex
+
+
+--- MIP status (101): integer optimal solution.
+--- Cplex Time: 0.02sec (det. 0.00 ticks)
+
+--- Returning a primal only solution to GAMS (marginals all set to NA).
+--- Fixing integer variables and solving final LP...
+
+
+--- Fixed MIP status (1): optimal.
+--- Cplex Time: 0.00sec (det. 0.00 ticks)
+
+
+Proven optimal solution
+MIP Solution:          481.664400    (0 iterations, 0 nodes)
+Final Solve:           481.664400    (0 iterations)
+
+Best possible:         481.664400
+Absolute gap:            0.000000
+Relative gap:            0.000000
+
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU obj                 .              .              .             1.0000      
+---- EQU oneAM              1.0000         1.0000         1.0000          .          
+
+---- VAR y  
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+f1           .              .             1.0000       917.3443      
+f2           .              .             1.0000      7291.0768      
+f3           .              .             1.0000       903.3676      
+f4           .              .             1.0000      1883.6083      
+f5           .              .             1.0000      1431.4457      
+f6           .              .             1.0000      1753.6209      
+f7           .              .             1.0000      1489.7440      
+f8           .             1.0000         1.0000       481.6644      
+f9           .              .             1.0000       849.4437      
+f10          .              .             1.0000       959.9932      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR z                 -INF          481.6644        +INF             .          
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+GAMS 52.2.0  d8e408be Dec 8, 2025           WEX-WEI x86 64bit/MS Windows - 01/05/26 20:27:32 Page 7
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+----     49 VARIABLE z.L                   =      481.664  
+
+----     49 VARIABLE y.L  
+
+f8 1.000
+
+
+----     54 PARAMETER z_check              =      481.664  
+
+----     54 PARAMETER distTM  TM -> firma mesafesi (km)
+
+            tm1         tm2
+
+f1        8.994       0.594
+f2                    9.444
+f3        9.079       0.570
+f4       10.752       1.730
+f5       10.481       1.162
+f6       10.516       1.577
+f7       10.245       1.253
+f8        9.444
+f9        9.018       0.505
+f10       9.163       0.638
+
+
+
+EXECUTION TIME       =        0.234 SECONDS      4 MB  52.2.0 d8e408be WEX-WEI
+
+
+USER: GAMS Demo, for EULA and demo limitations see   G251112+0003Cc-GEN
+      https://www.gams.com/latest/docs/UG%5FLicense.html         DC0000
+
+
+**** FILE SUMMARY
+
+Input      C:\Users\Lenovo\Desktop\BÝTÝRME,\KÜÇÜK VERÝ SETÝ\ayrýstýrmamerkezi.gms
+Output     C:\Users\Lenovo\Desktop\GAMSSSS\ayrýstýrmamerkezi.lst
