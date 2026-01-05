@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>GAMS Kodu</title>
+</head>
+<body>
+
+<h3>GAMS Modeli (.gms)</h3>
+
+<pre>
+Sets
+    i   "Firmalar / AM adaylari" /f1*f10/
+    t   "Toplama Merkezleri"     /tm1, tm2/;
+
+Parameters
+    load(t)        "Toplama merkezlerinin toplam yukleri"
+    distTM(i,t)    "TM -> firma mesafesi (km)";
+
+
+load('tm1') = 51;    
+load('tm2') = 772;  
+
+Table distTM(i,t)
+          tm1     tm2
+f1        8.9941  0.5941
+f2        0.0000  9.4444
+f3        9.0788  0.5704
+f4       10.7521  1.7296
+f5       10.4811  1.1618
+f6       10.5163  1.5768
+f7       10.2452  1.2529
+f8        9.4444  0.0000
+f9        9.0175  0.5046
+f10       9.1628  0.6382
+;
+
+Binary Variables
+    y(i);
+
+Variable
+    z;
+
+Equations
+    obj
+    oneAM;
+
+
+obj..
+    z =e= sum((i,t), load(t) * distTM(i,t) * y(i));
+
+
+oneAM..
+    sum(i, y(i)) =e= 1;
+
+
+Model AM_pmedian_TM /all/;
+Solve AM_pmedian_TM using MIP minimizing z;
+
+Display z.l, y.l;
+
+
+Scalar z_check;
+z_check = load('tm1')*distTM('f8','tm1') + load('tm2')*distTM('f8','tm2');
+Display z_check, distTM;
+
+</pre>
+
+</body>
+</html>

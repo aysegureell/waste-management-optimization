@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>GAMS Kodu</title>
+</head>
+<body>
+
+<h3>GAMS Modeli (.gms)</h3>
+
+<pre>
+Sets
+    n  /f1*f10/
+    t  /tm1, tm2/;
+
+Alias (n,i,j,nn);
+
+Set tmNode(t,n);
+tmNode('tm1','f2') = yes;
+tmNode('tm2','f8') = yes;
+
+Set cust(t,n);
+
+cust('tm1','f2') = yes;
+cust('tm1','f1') = yes;
+cust('tm1','f3') = yes;
+
+cust('tm2','f8')  = yes;
+cust('tm2','f4')  = yes;
+cust('tm2','f5')  = yes;
+cust('tm2','f6')  = yes;
+cust('tm2','f7')  = yes;
+cust('tm2','f9')  = yes;
+cust('tm2','f10') = yes;
+
+Parameter w(n) /
+    f1 111, f2 51, f3 120, f4 96, f5 26, f6 117, f7 43, f8 135, f9 57, f10 67 /;
+
+Table dist(i,j)
+          f1     f2     f3     f4     f5     f6     f7     f8     f9     f10
+f1        0.000  0.994  0.811  1.889  1.491  1.684  1.362  0.594  0.641  0.245
+f2        0.994  0.000  0.079  10.752 10.481 10.516 10.245 9.444  9.018  9.163
+f3        0.811  0.079  0.000  2.299  1.708  2.147  1.822  0.570  0.175  0.996
+f4        1.889 10.752  2.299  0.000  0.689  0.239  0.529  1.730  2.224  1.667
+f5        1.491 10.481  1.708  0.689  0.000  0.666  0.525  1.162  2.060  1.321
+f6        1.684 10.516  2.147  0.239  0.666  0.000  0.330  1.577  2.060  1.456
+f7        1.362 10.245  1.822  0.529  0.525  0.330  0.000  1.253  1.732  1.138
+f8        0.594  9.444  0.570  1.730  1.162  1.577  1.253  0.000  0.505  0.638
+f9        0.641  9.018  0.175  2.224  2.060  2.060  1.732  0.505  0.000  0.837
+f10       0.245  9.163  0.996  1.667  1.321  1.456  1.138  0.638  0.837  0.000
+;
+
+Scalar Q /999999/;
+
+Binary Variable arc(i,j,t);
+Variable z1;
+Positive Variable u(n,t);
+
+Equations
+    obj1
+    depOut(t)
+    depIn(t)
+    visitOnce(t,nn)
+    flowBal(t,nn)
+    noSelf(i,t)
+    cap(t)
+    mtz(i,j,t);
+
+obj1..
+    z1 =e= sum((i,j,t)$(ord(i)<>ord(j)), dist(i,j)*arc(i,j,t));
+
+depOut(t)..
+    sum((i,j)$(tmNode(t,i) and cust(t,j) and ord(j)<>ord(i)), arc(i,j,t)) =e= 1;
+
+depIn(t)..
+    sum((i,j)$(tmNode(t,j) and cust(t,i) and ord(i)<>ord(j)), arc(i,j,t)) =e= 1;
+
+visitOnce(t,nn)$(cust(t,nn) and not tmNode(t,nn))..
+    sum(i$(cust(t,i) and ord(i)<>ord(nn)), arc(i,nn,t)) =e= 1;
+
+flowBal(t,nn)$(cust(t,nn) and not tmNode(t,nn))..
+    sum(j$(cust(t,j) and ord(j)<>ord(nn)), arc(nn,j,t))
+    =e=
+    sum(i$(cust(t,i) and ord(i)<>ord(nn)), arc(i,nn,t));
+
+noSelf(i,t)..
+    arc(i,i,t) =e= 0;
+
+cap(t)..
+    sum(nn$(cust(t,nn) and not tmNode(t,nn)),
+        w(nn) * sum(i$(cust(t,i) and ord(i)<>ord(nn)), arc(i,nn,t))
+    ) =l= Q;
+
+mtz(i,j,t)$(cust(t,i) and cust(t,j) and ord(i)<>ord(j)
+            and (not tmNode(t,i)) and (not tmNode(t,j)))..
+    u(i,t) - u(j,t) + card(n)*arc(i,j,t) =l= card(n)-1;
+
+option mip = gurobi;
+Model VRP_Level1 /all/;
+Solve VRP_Level1 using MIP minimizing z1;
+
+execute_unload "rota_sonuc.gdx", arc;
+
+
+File rota /rota_1_kademe.txt/;
+put rota;
+
+put "1. KADEME TOPLAMA ROTLARI" / ;
+
+loop(t,
+    put / "TM: ", t.tl:0 / ;
+    
+    loop((i,j)$(arc.l(i,j,t) > 0.5),
+        put i.tl:0, " -> ", j.tl:0 / ;
+    );
+);
+
+putclose rota;
+
+Display z1.l, arc.l;
+</pre>
+
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>GAMS Kodu</title>
+</head>
+<body>
+
+<h3>GAMS Modeli (.gms)</h3>
+
+<pre>
+Sets
+    i  firms /f1*f10/;
+
+Alias (i,j);
+
+Parameter
+    d(i,j)   distance
+    w(i)     waste
+    p        /2/;
+
+w('f1')  = 111;
+w('f2')  = 51;
+w('f3')  = 120;
+w('f4')  = 96;
+w('f5')  = 26;
+w('f6')  = 117;
+w('f7')  = 43;
+w('f8')  = 135;
+w('f9')  = 57;
+w('f10') = 67;
+
+Table d(i,j)
+        f1     f2     f3     f4     f5     f6     f7     f8     f9     f10
+f1      0.000  8.994  0.811  1.889  1.491  1.684  1.362  0.594  0.641  0.245
+f2      8.994  0.000  9.079 10.752 10.481 10.516 10.245  9.444  9.018  9.163
+f3      0.811  9.079  0.000  2.299  1.708  2.147  1.822  0.570  0.175  0.996
+f4      1.889 10.752  2.299  0.000  0.689  0.239  0.529  1.730  2.224  1.667
+f5      1.491 10.481  1.708  0.689  0.000  0.666  0.525  1.162  1.666  1.321
+f6      1.684 10.516  2.147  0.239  0.666  0.000  0.330  1.577  2.060  1.456
+f7      1.362 10.245  1.822  0.529  0.525  0.330  0.000  1.253  1.732  1.138
+f8      0.594  9.444  0.570  1.730  1.162  1.577  1.253  0.000  0.505  0.638
+f9      0.641  9.018  0.175  2.224  1.666  2.060  1.732  0.505  0.000  0.837
+f10     0.245  9.163  0.996  1.667  1.321  1.456  1.138  0.638  0.837  0.000
+;
+
+Binary Variable
+    y(j)     "1 if facility opened at j"
+    x(i,j)   "1 if i assigned to j";
+
+Variable z;
+
+
+Equations
+    obj
+    assignOnce(i)
+    openLimit
+    link(i,j);
+
+obj..
+    z =e= sum((i,j), w(i) * d(i,j) * x(i,j));
+
+assignOnce(i)..
+    sum(j, x(i,j)) =e= 1;
+
+openLimit..
+    sum(j, y(j)) =e= p;
+
+link(i,j)..
+    x(i,j) =l= y(j);
+
+Model pMedian /all/;
+Solve pMedian using MIP minimizing z;
+
+Display z.l, y.l, x.l;
+</pre>
+
+</body>
+</html>
